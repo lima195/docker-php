@@ -6,32 +6,38 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ENV HOME /home/john
 
-RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
+RUN apt update \
+        && apt install -y --no-install-recommends apt-utils
 
 # Get repository and install wget and vim
-RUN apt-get update && apt-get install --no-install-recommends -y \
-        wget \
-        vim \
-        git \
+RUN apt install --no-install-recommends -y \
+        openssh-server \
         apt-utils \
-        unzip
+        unzip \
+        wget \
+        cron \
+        vim \
+        git
 
 # Install PHP extensions deps
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
+RUN apt install -y --force-yes --no-install-recommends -y \
+        libmagickwand-dev \
+        libmemcached-dev \
         libfreetype6-dev \
-        libjpeg62-turbo-dev \
         libmcrypt-dev \
-        zlib1g-dev \
-        libicu-dev \
-        g++ \
-        unixodbc-dev \
-        libxml2-dev \
-        libaio-dev \
-        freetds-dev \
-		libssl-dev \
+        libjpeg-dev \
         libxslt-dev \
-		openssl
+        libxml2-dev \
+        libpng-dev \
+        libssl-dev \
+        libpq-dev \
+        libz-dev
+
+# Install Xdebug
+RUN pecl install -f xdebug
+
+# Install mycript
+RUN pecl install mcrypt-1.0.2
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php \
@@ -39,46 +45,40 @@ RUN curl -sS https://getcomposer.org/installer | php \
 	&& composer global require hirak/prestissimo --no-plugins --no-scripts
 
 # Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
-    && docker-php-ext-install \
-            iconv \
-            mbstring \
-            bcmath \
-            xsl \
-            intl \
-            gd \
-            mysqli \
-            pdo_mysql \
-            soap \
-            zip \
-            xmlrpc \
-            opcache 
+RUN docker-php-ext-install pdo_mysql
+RUN docker-php-ext-install pdo_pgsql
+RUN docker-php-ext-install mbstring
+RUN docker-php-ext-install opcache
+RUN docker-php-ext-install sockets
+RUN docker-php-ext-install bcmath
+RUN docker-php-ext-install mysqli
+RUN docker-php-ext-install xmlrpc
+RUN docker-php-ext-install iconv
+RUN docker-php-ext-install pcntl
+RUN docker-php-ext-install intl
+RUN docker-php-ext-install soap
+RUN docker-php-ext-install exif
+RUN docker-php-ext-install xsl
+RUN docker-php-ext-install zip
 
-RUN apt-get update && apt-get install -y libmcrypt-dev \
-        && pecl install mcrypt-1.0.2 \
-        && docker-php-ext-enable mcrypt \
-        && docker-php-ext-enable bcmath
+# Enabling some php extensions
+RUN docker-php-ext-enable bcmath
+RUN docker-php-ext-enable mcrypt
+RUN docker-php-ext-enable xdebug
 
-# Install Xdebug
-RUN apt-get update \
-    && pecl install -f xdebug \
-    && docker-php-ext-enable xdebug \
-    && echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_handler=dbgp" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_port=9001" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_autostart=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_connect_back=0" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.idekey=docker" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_host=172.22.0.1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+# Install GD
+RUN docker-php-ext-install gd
 
 # Clean repository
-RUN apt-get clean \
+RUN apt clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./etc/php_ini/docker-php-ext-xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+# Copy ini files
+COPY ./etc/php_ini/php72/docker-php-ext-xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 COPY ./etc/php_ini/php.ini /usr/local/etc/php/php.ini
 
 ## Fixing owner permissions
 RUN chown -R john:john $HOME
 
+# Set user john
 USER john

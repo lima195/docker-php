@@ -24,14 +24,16 @@ services:
 
   php:
     container_name: web_php
-    image: lima195/php-fpm7.0:lastest
+    build:
+      context: .
+      dockerfile: ./php72/Dockerfile
     #restart: always
     user: john
     volumes:
      - ../web:/usr/share/nginx/www
      - ./etc/php_ini/php.ini:/usr/local/etc/php/php.ini
-     - ./etc/php_ini/php70/docker-php-ext-xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-     #- ./etc/php_ini/php72/docker-php-ext-xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+    #  - ./etc/php_ini/php70/docker-php-ext-xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+     - ./etc/php_ini/php72/docker-php-ext-xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
     working_dir: /usr/share/nginx/www
     ports:
       - 9000:9000
